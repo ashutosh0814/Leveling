@@ -9,9 +9,7 @@ export default function EditTaskModal({
 }) {
   const [title, setTitle] = useState(initialData?.title || "");
   const [notes, setNotes] = useState(initialData?.notes || "");
-  const [difficulty, setDifficulty] = useState(
-    initialData?.difficulty || "Easy"
-  );
+  const [difficulty, setDifficulty] = useState(initialData?.difficulty || "Easy");
   const [tags, setTags] = useState(initialData?.tags?.join(", ") || "");
   const [resetFrequency, setResetFrequency] = useState(
     initialData?.resetFrequency || "Daily"
@@ -51,74 +49,91 @@ export default function EditTaskModal({
           Edit Task
         </h2>
 
-        <input
-          type="text"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 w-full"
-        />
-
-        <textarea
-          placeholder="Notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 w-full"
-        />
-
-        <select
-          value={difficulty}
-          onChange={(e) => setDifficulty(e.target.value)}
-          className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 w-full"
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
         >
-          <option value="Easy">Easy</option>
-          <option value="Medium">Medium</option>
-          <option value="Hard">Hard</option>
-        </select>
+          <input
+            type="text"
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 w-full"
+            aria-label="Task title"
+          />
 
-        <input
-          type="text"
-          placeholder="Tags (comma-separated)"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 w-full"
-        />
+          <textarea
+            placeholder="Notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 w-full"
+            aria-label="Task notes"
+          />
 
-        <select
-          value={resetFrequency}
-          onChange={(e) => setResetFrequency(e.target.value)}
-          className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 w-full"
-        >
-          <option value="Daily">Daily</option>
-          <option value="Weekly">Weekly</option>
-          <option value="Monthly">Monthly</option>
-        </select>
-
-        <div className="flex justify-between">
-          <button
-            onClick={handleDelete}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
-            style={{ fontFamily: "'Press Start 2P', sans-serif" }}
+          <select
+            value={difficulty}
+            onChange={(e) => setDifficulty(e.target.value)}
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 w-full"
+            aria-label="Task difficulty"
           >
-            Delete Task
-          </button>
-          <div className="flex space-x-2">
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+
+          <input
+            type="text"
+            placeholder="Tags (comma-separated)"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 w-full"
+            aria-label="Task tags"
+          />
+
+          <select
+            value={resetFrequency}
+            onChange={(e) => setResetFrequency(e.target.value)}
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 w-full"
+            aria-label="Task reset frequency"
+          >
+            <option value="Daily">Daily</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Monthly">Monthly</option>
+          </select>
+
+          <div className="flex justify-between">
             <button
-              onClick={onClose}
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition"
+              type="button"
+              onClick={handleDelete}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors duration-200 anime-button"
               style={{ fontFamily: "'Press Start 2P', sans-serif" }}
+              aria-label="Delete task"
             >
-              Cancel
+              Delete Task
             </button>
-            <button
-              onClick={handleSave}
-              className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition"
-              style={{ fontFamily: "'Press Start 2P', sans-serif" }}
-            >
-              Save Changes
-            </button>
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 anime-button"
+                style={{ fontFamily: "'Press Start 2P', sans-serif" }}
+                aria-label="Cancel editing"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors duration-200 anime-button"
+                style={{ fontFamily: "'Press Start 2P', sans-serif" }}
+                aria-label="Save changes"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

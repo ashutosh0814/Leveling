@@ -2,27 +2,11 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import {
   signInWithPopup,
-  fetchSignInMethodsForEmail,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendEmailVerification,
 } from "firebase/auth";
 import { ensureUserDocument } from "../utils/firebase";
-import {
-  auth,
-  googleProvider,
-  createUserDocument,
-  getUserDocument,
-} from "../utils/firebase";
-
-const AVATARS = [
-  "/avatars/avatar1.png",
-  "/avatars/avatar2.png",
-  "/avatars/avatar3.png",
-  "/avatars/avatar4.png",
-  "/avatars/avatar5.png",
-  "/avatars/avatar5.png",
-];
+import { auth, googleProvider } from "../utils/firebase";
 
 const EyeIcon = ({ className }) => (
   <svg
@@ -99,21 +83,60 @@ export default function AuthForm({ onSuccess }) {
     return true;
   };
 
+  const handleAuthSuccess = (user, isNewUser = false) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('needsUserSetup', 'true');
+      const destination = isNewUser ? "/dashboard?firstTime=true" : "/dashboard";
+      window.location.href = destination;
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
+    setMessage({ text: "", type: "" });
+    
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      await ensureUserDocument(result.user);
-      router.push("/dashboard?firstTime=true");
+      const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime;
+      
+      try {
+        const userData = await ensureUserDocument(result.user);
+        if (userData) {
+          if (typeof window !== 'undefined') {
+            window.location.href = isNewUser 
+              ? "/dashboard?firstTime=true" 
+              : "/dashboard";
+          }
+        } else {
+          handleAuthSuccess(result.user, isNewUser);
+        }
+      } catch (dbError) {
+        console.error("Database error:", dbError);
+        if (dbError.code === 'permission-denied' || 
+            dbError.message.includes('Missing or insufficient permissions')) {
+          console.log("Auth successful but database permission denied. Continuing to dashboard...");
+          handleAuthSuccess(result.user, isNewUser);
+        } else {
+          throw dbError;
+        }
+      }
     } catch (error) {
-      // Handle error
+      console.error("Google sign-in error:", error);
+      setMessage({ 
+        text: getErrorMessage(error), 
+        type: "error" 
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleEmailAuth = async () => {
+    if (!validateForm()) return;
+    
     setIsLoading(true);
+    setMessage({ text: "", type: "" });
+    
     try {
       if (isSignup) {
         const userCredential = await createUserWithEmailAndPassword(
@@ -121,19 +144,45 @@ export default function AuthForm({ onSuccess }) {
           email,
           password
         );
-        await ensureUserDocument(userCredential.user);
-        router.push("/dashboard?firstTime=true");
+        
+        try {
+          await ensureUserDocument(userCredential.user);
+          router.push("/dashboard?firstTime=true");
+        } catch (dbError) {
+          console.error("Database error during signup:", dbError);
+          if (dbError.code === 'permission-denied' || 
+              dbError.message.includes('Missing or insufficient permissions')) {
+            handleAuthSuccess(userCredential.user, true);
+          } else {
+            throw dbError;
+          }
+        }
       } else {
         const userCredential = await signInWithEmailAndPassword(
           auth,
           email,
           password
         );
-        await ensureUserDocument(userCredential.user);
-        router.push("/dashboard");
+        
+        try {
+          await ensureUserDocument(userCredential.user);
+          router.push("/dashboard");
+        } catch (dbError) {
+          console.error("Database error during login:", dbError);
+          if (dbError.code === 'permission-denied' || 
+              dbError.message.includes('Missing or insufficient permissions')) {
+            handleAuthSuccess(userCredential.user, false);
+          } else {
+            throw dbError;
+          }
+        }
       }
     } catch (error) {
-      // Handle error
+      console.error("Email auth error:", error);
+      setMessage({ 
+        text: getErrorMessage(error), 
+        type: "error" 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -150,10 +199,18 @@ export default function AuthForm({ onSuccess }) {
       "auth/weak-password": "Password must be at least 8 characters",
       "auth/network-request-failed": "Network error. Check your connection",
       "auth/operation-not-allowed": "Email/password accounts not enabled",
+      "auth/popup-closed-by-user": "Sign-in popup was closed. Please try again.",
+      "auth/cancelled-popup-request": "The authentication popup was cancelled. Please try again.",
+      "auth/popup-blocked": "The sign-in popup was blocked by your browser. Please allow popups for this site.",
+      "permission-denied": "Database permissions error. Please contact support.",
       default: "An error occurred. Please try again.",
     };
 
-    return errorMap[error.code] || errorMap["default"];
+    if (error.message && error.message.includes("Missing or insufficient permissions")) {
+      return "Database permissions error. Authentication was successful, redirecting...";
+    }
+
+    return errorMap[error.code] || error.message || errorMap["default"];
   };
 
   const getPasswordStrength = () => {
@@ -170,13 +227,6 @@ export default function AuthForm({ onSuccess }) {
   };
 
   const passwordStrength = isSignup ? getPasswordStrength() : 0;
-  const strengthColors = [
-    "bg-red-500",
-    "bg-orange-500",
-    "bg-yellow-500",
-    "bg-lime-500",
-    "bg-green-500",
-  ];
 
   const toggleAuthMode = () => {
     resetForm();
@@ -184,7 +234,7 @@ export default function AuthForm({ onSuccess }) {
   };
 
   return (
-    <div className="w-full max-w-md bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-700">
+    <div className="w-full bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-700">
       <div className="flex border-b border-gray-700">
         <button
           onClick={() => setIsSignup(true)}
@@ -206,10 +256,10 @@ export default function AuthForm({ onSuccess }) {
         </button>
       </div>
 
-      <div className="p-6 sm:p-8">
+      <div className="p-4 sm:p-6">
         {message.text && (
           <div
-            className={`mb-6 p-4 rounded-lg ${
+            className={`mb-4 p-3 rounded-lg ${
               message.type === "success"
                 ? "bg-green-900 text-green-300"
                 : "bg-red-900 text-red-300"
@@ -233,9 +283,10 @@ export default function AuthForm({ onSuccess }) {
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={isLoading}
               autoComplete="email"
+              inputMode="email"
             />
           </div>
 
@@ -261,7 +312,7 @@ export default function AuthForm({ onSuccess }) {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
                 disabled={isLoading}
                 autoComplete={isSignup ? "new-password" : "current-password"}
               />
@@ -314,7 +365,7 @@ export default function AuthForm({ onSuccess }) {
           <button
             onClick={handleEmailAuth}
             disabled={isLoading}
-            className={`w-full py-3 px-4 rounded-lg font-bold ${
+            className={`w-full py-2 sm:py-3 px-4 rounded-lg font-bold ${
               isLoading
                 ? "bg-blue-700 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
@@ -352,7 +403,7 @@ export default function AuthForm({ onSuccess }) {
           </button>
         </div>
 
-        <div className="flex items-center my-6">
+        <div className="flex items-center my-4 sm:my-6">
           <div className="flex-grow border-t border-gray-700"></div>
           <span className="flex-shrink mx-4 text-gray-400 text-sm">OR</span>
           <div className="flex-grow border-t border-gray-700"></div>
@@ -361,7 +412,7 @@ export default function AuthForm({ onSuccess }) {
         <button
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-full flex items-center justify-center py-3 px-4 border border-gray-600 rounded-lg font-medium text-white bg-gray-700 hover:bg-gray-600"
+          className="w-full flex items-center justify-center py-2 sm:py-3 px-4 border border-gray-600 rounded-lg font-medium text-white bg-gray-700 hover:bg-gray-600"
         >
           <svg
             className="w-5 h-5 mr-2"
@@ -389,7 +440,7 @@ export default function AuthForm({ onSuccess }) {
           Continue with Google
         </button>
 
-        <p className="mt-6 text-center text-sm text-gray-400">
+        <p className="mt-4 sm:mt-6 text-center text-sm text-gray-400">
           {isSignup ? "Already have an account? " : "Don't have an account? "}
           <button
             onClick={toggleAuthMode}

@@ -3,23 +3,38 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  apiKey: "AIzaSyDjmfJ_sOaUtoPDIViobaQcuw-7JRexxRU",
+  authDomain: "levelup-f67c5.firebaseapp.com",
+  projectId: "levelup-f67c5",
+  storageBucket: "levelup-f67c5.firebasestorage.app",
+  messagingSenderId: "343069769982",
+  appId: "1:343069769982:web:21a169afdfcc9a1ab6e5af",
+  measurementId: "G-9ZVQZCRV4X",
 };
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const app =
+  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const db = getFirestore(app);
 
 export const ensureUserDocument = async (user) => {
   const userRef = doc(db, "users", user.uid);
-  const userSnap = await getDoc(userRef);
+  const userSnap = await getDoc(userRef).catch((error) => {
+    console.error("Error getting user document:", error);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "userAuthInfo",
+        JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          displayName:
+            user.displayName || user.email?.split("@")[0] || "New Adventurer",
+        })
+      );
+    }
+    throw error;
+  });
 
   if (!userSnap.exists()) {
     const defaultTimerSettings = {
@@ -29,14 +44,14 @@ export const ensureUserDocument = async (user) => {
       autoStartBreaks: true,
       autoStartPomodoros: false,
       longBreakInterval: 4,
-      background: 'default',
-      alarmSound: 'classic'
+      background: "shadow", // Default wallpaper set here
+      alarmSound: "classic",
     };
 
     const defaultData = {
       user: {
         uid: user.uid,
-        name: user.displayName || user.email?.split('@')[0] || "New Adventurer",
+        name: user.displayName || user.email?.split("@")[0] || "New Adventurer",
         email: user.email,
         avatar: `/avatars/avatar${Math.floor(Math.random() * 6) + 1}.png`,
         level: 1,
@@ -45,21 +60,32 @@ export const ensureUserDocument = async (user) => {
         xp: 0,
         elixirs: 0,
         nextRankElixirs: 10000,
+        highestScore: 0, // Add this line
         unlockedBackgrounds: [],
-        unlockedAlarmSounds: []
+        unlockedAlarmSounds: [],
       },
-      dailyQuests: [],
-      weeklyDungeons: [],
-      monthlyGoals: [],
-      currentWallpaper: "E Rank Wallpaper",
-      timerSettings: defaultTimerSettings
+      timerSettings: defaultTimerSettings,
     };
 
-    await setDoc(userRef, defaultData);
+    await setDoc(userRef, defaultData).catch((error) => {
+      console.error("Error creating user document:", error);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          "userAuthInfo",
+          JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            displayName:
+              user.displayName || user.email?.split("@")[0] || "New Adventurer",
+          })
+        );
+        localStorage.setItem("needsUserSetup", "true");
+      }
+      throw error;
+    });
     return defaultData;
   }
 
-  // Backward compatibility
   const userData = userSnap.data();
   if (!userData.timerSettings) {
     const defaultTimerSettings = {
@@ -69,18 +95,25 @@ export const ensureUserDocument = async (user) => {
       autoStartBreaks: true,
       autoStartPomodoros: false,
       longBreakInterval: 4,
-      background: 'default',
-      alarmSound: 'classic'
+      background: "shadow", // Default wallpaper set here
+      alarmSound: "classic",
     };
 
-    await setDoc(userRef, {
-      timerSettings: defaultTimerSettings,
-      user: {
-        ...userData.user,
-        unlockedBackgrounds: userData.user?.unlockedBackgrounds || [],
-        unlockedAlarmSounds: userData.user?.unlockedAlarmSounds || []
-      }
-    }, { merge: true });
+    await setDoc(
+      userRef,
+      {
+        timerSettings: defaultTimerSettings,
+        user: {
+          ...userData.user,
+          unlockedBackgrounds: userData.user?.unlockedBackgrounds || [],
+          unlockedAlarmSounds: userData.user?.unlockedAlarmSounds || [],
+        },
+      },
+      { merge: true }
+    ).catch((error) => {
+      console.error("Error updating legacy user data:", error);
+      throw error;
+    });
 
     return {
       ...userData,
@@ -88,8 +121,8 @@ export const ensureUserDocument = async (user) => {
       user: {
         ...userData.user,
         unlockedBackgrounds: userData.user?.unlockedBackgrounds || [],
-        unlockedAlarmSounds: userData.user?.unlockedAlarmSounds || []
-      }
+        unlockedAlarmSounds: userData.user?.unlockedAlarmSounds || [],
+      },
     };
   }
 
@@ -97,58 +130,35 @@ export const ensureUserDocument = async (user) => {
 };
 
 export const updateUserData = async (user, updates) => {
-  try {
-    const userRef = doc(db, "users", user.uid);
-    const currentData = (await getDoc(userRef)).data() || {};
-    
-    const mergedData = {
-      ...currentData,
-      ...updates,
-      user: {
-        ...currentData.user,
-        ...(updates.user || {})
-      },
-      timerSettings: {
-        ...currentData.timerSettings,
-        ...(updates.timerSettings || {})
-      }
-    };
+  const userRef = doc(db, "users", user.uid);
+  const userDoc = await getDoc(userRef).catch((error) => {
+    console.error("Error getting current user data:", error);
+    throw error;
+  });
 
-    await setDoc(userRef, mergedData, { merge: true });
-    return mergedData;
-  } catch (error) {
+  const currentData = userDoc.data() || {};
+  const mergedData = {
+    ...currentData,
+    ...updates,
+    user: { ...currentData.user, ...(updates.user || {}) },
+    timerSettings: {
+      ...currentData.timerSettings,
+      ...(updates.timerSettings || {}),
+    },
+  };
+
+  await setDoc(userRef, mergedData, { merge: true }).catch((error) => {
     console.error("Error updating user data:", error);
     throw error;
-  }
+  });
+
+  return mergedData;
 };
 
 export const unlockTimerItem = async (user, itemType, itemId, cost) => {
-  try {
-    const userRef = doc(db, "users", user.uid);
-    const userDoc = await getDoc(userRef);
-    const userData = userDoc.data();
-    
-    if (!userData) throw new Error("User not found");
-    if (userData.user.elixirs < cost) throw new Error("Not enough elixirs");
-    
-    const fieldName = `unlocked${itemType === 'background' ? 'Backgrounds' : 'AlarmSounds'}`;
-    const updatedItems = [...new Set([
-      ...(userData.user[fieldName] || []),
-      itemId
-    ])];
-
-    const updatedUser = {
-      ...userData.user,
-      [fieldName]: updatedItems,
-      elixirs: userData.user.elixirs - cost
-    };
-
-    await setDoc(userRef, { user: updatedUser }, { merge: true });
-    return updatedUser;
-  } catch (error) {
-    console.error("Error unlocking timer item:", error);
-    throw error;
-  }
+  throw new Error(
+    "Shop functionality removed, unlockTimerItem is no longer supported."
+  );
 };
 
 export default {
@@ -157,5 +167,5 @@ export default {
   db,
   ensureUserDocument,
   updateUserData,
-  unlockTimerItem
+  unlockTimerItem,
 };

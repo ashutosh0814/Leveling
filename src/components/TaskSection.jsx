@@ -2,7 +2,7 @@ import TaskCard from "./TaskCard";
 
 export default function TaskSection({ title, tasks, onAdd, onComplete, onEdit, onDelete }) {
   return (
-    <div className="bg-gray-800 bg-opacity-90 p-6 rounded-lg shadow-md w-full border-2 border-gray-700">
+    <div className="bg-gray-800 bg-opacity-90 p-6 rounded-lg shadow-md w-full border-2 border-gray-700 h-[calc(100vh-250px)]">
       <div className="flex justify-between items-center mb-4">
         <h3
           className="text-lg font-bold text-yellow-500"
@@ -13,7 +13,7 @@ export default function TaskSection({ title, tasks, onAdd, onComplete, onEdit, o
         <span className="text-sm text-gray-400">{tasks.length} TASKS</span>
       </div>
 
-      <div className="max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+      <div className="max-h-[calc(100%-100px)] overflow-y-auto pr-2 scrollbar-custom">
         {tasks.length > 0 ? (
           tasks.map((task) => (
             <TaskCard

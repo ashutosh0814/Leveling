@@ -1,55 +1,59 @@
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { auth } from '../utils/firebase';
-import { signOut } from 'firebase/auth';
-import { useRouter } from 'next/router';
-import TimerModal from './TimerModal';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { auth } from "../utils/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/router";
+import TimerModal from "./TimerModal";
+import AntGameModal from "./AntGameModal"; // New component for the ant game
 
 const AVATARS = [
-  '/avatars/avatar1.png',
-  '/avatars/avatar2.png',
-  '/avatars/avatar3.png',
-  '/avatars/avatar4.png',
-  '/avatars/avatar5.png',
-  '/avatars/avatar6.png',
+  "/avatars/avatar1.png",
+  "/avatars/avatar2.png",
+  "/avatars/avatar3.png",
+  "/avatars/avatar4.png",
+  "/avatars/avatar5.png",
+  "/avatars/avatar6.png",
 ];
 
-export default function Navbar({ user, onUpdateUser, onOpenChallenge, onOpenInsights }) {
+export default function Navbar({
+  user,
+  onUpdateUser,
+  onOpenChallenge,
+  onOpenInsights,
+}) {
   const router = useRouter();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isTimerOpen, setIsTimerOpen] = useState(false);
-  
-  // Format the name to include "Hunter" prefix and limit character length
+  const [isAntGameOpen, setIsAntGameOpen] = useState(false); // State for ant game modal
+
   const formatDisplayName = (name) => {
-    if (!name) return 'Hunter Adventurer';
-    
-    // Extract the name without "Hunter" prefix if it exists
-    const nameWithoutPrefix = name.startsWith('Hunter ') ? name.substring(7) : name;
-    
-    // Limit to 10 characters
-    const limitedName = nameWithoutPrefix.length > 10 ? 
-      nameWithoutPrefix.substring(0, 10) : 
-      nameWithoutPrefix;
-      
+    if (!name) return "Hunter Adventurer";
+    const nameWithoutPrefix = name.startsWith("Hunter ")
+      ? name.substring(7)
+      : name;
+    const limitedName = nameWithoutPrefix.replace(/\s+/g, "").substring(0, 10);
     return `Hunter ${limitedName}`;
   };
-  
-  const [tempName, setTempName] = useState(
-    user?.name ? formatDisplayName(user.name).substring(7) : 'Adventurer'
-  );
-  
-  const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar || AVATARS[0]);
 
-  const progressPercentage = user?.elixirs && user?.nextRankElixirs 
-    ? ((user.elixirs / user.nextRankElixirs) * 100).toFixed(2)
-    : '0';
+  const [tempName, setTempName] = useState(
+    user?.name ? formatDisplayName(user.name).substring(7) : "Adventurer"
+  );
+
+  const [selectedAvatar, setSelectedAvatar] = useState(
+    user?.avatar || AVATARS[0]
+  );
+
+  const progressPercentage =
+    user?.elixirs && user?.nextRankElixirs
+      ? ((user.elixirs / user.nextRankElixirs) * 100).toFixed(2)
+      : "0";
 
   const handleSaveName = () => {
-    const trimmedName = tempName.trim();
-    if (trimmedName && onUpdateUser) {
-      // Save with Hunter prefix
-      onUpdateUser({ ...user, name: `Hunter ${trimmedName}` });
+    let sanitizedName = tempName.replace(/\s+/g, "").trim();
+    if (!sanitizedName) sanitizedName = "Adventurer";
+    if (onUpdateUser) {
+      onUpdateUser({ ...user, name: `Hunter ${sanitizedName}` });
       setIsSettingsOpen(false);
     }
   };
@@ -65,29 +69,37 @@ export default function Navbar({ user, onUpdateUser, onOpenChallenge, onOpenInsi
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.push('/');
+      router.push("/");
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
-  // Make sure displayed name always has the Hunter prefix
   useEffect(() => {
-    if (user?.name && !user.name.startsWith('Hunter ') && onUpdateUser) {
-      onUpdateUser({ ...user, name: `Hunter ${user.name}` });
+    if (user?.name) {
+      const formattedName = formatDisplayName(user.name);
+      if (formattedName !== user.name && onUpdateUser) {
+        onUpdateUser({ ...user, name: formattedName });
+      }
     }
   }, [user]);
 
-  const displayName = user?.name ? formatDisplayName(user.name) : 'Hunter Adventurer';
+  const displayName = user?.name
+    ? formatDisplayName(user.name)
+    : "Hunter Adventurer";
+
+  const handleNameChange = (e) => {
+    const value = e.target.value.replace(/\s+/g, "").substring(0, 10);
+    setTempName(value);
+  };
 
   return (
     <>
       <div className="bg-gray-900 text-white p-4 flex items-center justify-between border-b border-yellow-600 shadow-md">
-        {/* User Info */}
         <div className="flex items-center space-x-4">
           <div className="relative">
             <img
-              src={user?.avatar || '/avatars/default.png'}
+              src={user?.avatar || "/avatars/default.png"}
               alt="User Avatar"
               className="w-12 h-12 rounded-full border-2 border-yellow-500 cursor-pointer hover:border-yellow-300 transition-all avatar-pulse"
               onClick={() => setIsAvatarModalOpen(true)}
@@ -95,12 +107,11 @@ export default function Navbar({ user, onUpdateUser, onOpenChallenge, onOpenInsi
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
           </div>
           <div>
-            <h2 className="text-lg font-bold">{displayName}</h2>
-            <p className="text-sm text-gray-300">RANK: {user?.rank || 'E'}</p>
+            <h2 className="text-base font-bold">{displayName}</h2>
+            <p className="text-xs text-gray-300">RANK: {user?.rank || "E"}</p>
           </div>
         </div>
 
-        {/* Progress Bar */}
         <div className="flex-1 max-w-md mx-4">
           <div className="flex justify-between text-sm text-gray-300 mb-2">
             <span>ELIXIRS: {user?.elixirs || 0}</span>
@@ -114,94 +125,188 @@ export default function Navbar({ user, onUpdateUser, onOpenChallenge, onOpenInsi
           </div>
         </div>
 
-        {/* Right Side Buttons */}
         <div className="flex items-center space-x-2">
           <button
             onClick={onOpenInsights}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition anime-button"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition anime-button flex items-center"
             style={{ fontFamily: "'Press Start 2P', sans-serif" }}
           >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
             INSIGHTS
           </button>
 
           <button
             onClick={onOpenChallenge}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition anime-button"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition anime-button flex items-center"
             style={{ fontFamily: "'Press Start 2P', sans-serif" }}
           >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
             CHALLENGE
           </button>
 
           <button
             onClick={() => setIsTimerOpen(true)}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition anime-button"
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition anime-button flex items-center"
             style={{ fontFamily: "'Press Start 2P', sans-serif" }}
           >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
             TIMER
           </button>
 
-          <Link href="/shop" legacyBehavior>
-            <a className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm transition anime-button flex items-center" style={{ fontFamily: "'Press Start 2P', sans-serif" }}>
-              <span>SHOP</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-            </a>
-          </Link>
+          <button
+            onClick={() => setIsAntGameOpen(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition anime-button flex items-center"
+            style={{ fontFamily: "'Press Start 2P', sans-serif" }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            ANT GAME
+          </button>
 
-          <button 
+          <button
             onClick={() => setIsSettingsOpen(true)}
             className="p-2 rounded-lg hover:bg-gray-700 transition anime-button"
             aria-label="Settings"
           >
-            {/* Settings gear icon changed to wheel */}
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
             </svg>
           </button>
         </div>
       </div>
 
-      {/* Timer Modal */}
       {isTimerOpen && (
-        <TimerModal 
-          user={user}
-          onClose={() => setIsTimerOpen(false)}
-          onUpdateUser={onUpdateUser}
-        />
+        <TimerModal user={user} onClose={() => setIsTimerOpen(false)} />
       )}
 
-      {/* Settings Modal - Made Larger */}
+      {isAntGameOpen && (
+        <AntGameModal user={user} onClose={() => setIsAntGameOpen(false)} />
+      )}
+
       {isSettingsOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md border-2 border-yellow-500">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold" style={{ fontFamily: "'Press Start 2P', sans-serif" }}>USER SETTINGS</h2>
-              <button 
+              <h2
+                className="text-xl font-bold"
+                style={{ fontFamily: "'Press Start 2P', sans-serif" }}
+              >
+                USER SETTINGS
+              </h2>
+              <button
                 onClick={() => setIsSettingsOpen(false)}
                 className="text-gray-400 hover:text-white"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ fontFamily: "'Press Start 2P', sans-serif" }}>CHANGE NAME</label>
+                <label
+                  className="block text-sm font-medium mb-2"
+                  style={{ fontFamily: "'Press Start 2P', sans-serif" }}
+                >
+                  CHANGE NAME
+                </label>
                 <div className="flex space-x-2 items-center">
                   <div className="text-gray-300 text-sm">Hunter</div>
                   <input
                     type="text"
                     value={tempName}
-                    onChange={(e) => setTempName(e.target.value.substring(0, 10))}
+                    onChange={handleNameChange}
                     className="flex-1 bg-gray-700 text-white px-3 py-2 rounded text-sm border border-gray-600 focus:ring-1 focus:ring-yellow-500"
                     maxLength={10}
                     placeholder="Name (max 10 chars)"
                   />
-                  <button 
+                  <button
                     onClick={handleSaveName}
                     className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm transition anime-button"
                     style={{ fontFamily: "'Press Start 2P', sans-serif" }}
@@ -209,18 +314,28 @@ export default function Navbar({ user, onUpdateUser, onOpenChallenge, onOpenInsi
                     SAVE
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Name will be displayed as: Hunter {tempName}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Name will be displayed as: Hunter {tempName}
+                </p>
+                <p className="text-xs text-gray-400">
+                  No spaces allowed. Max 10 characters.
+                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ fontFamily: "'Press Start 2P', sans-serif" }}>AVATAR</label>
+                <label
+                  className="block text-sm font-medium mb-2"
+                  style={{ fontFamily: "'Press Start 2P', sans-serif" }}
+                >
+                  AVATAR
+                </label>
                 <div className="flex items-center space-x-3">
-                  <img 
-                    src={user?.avatar || '/avatars/default.png'} 
-                    alt="Current Avatar" 
+                  <img
+                    src={user?.avatar || "/avatars/default.png"}
+                    alt="Current Avatar"
                     className="w-12 h-12 rounded-full border border-yellow-500"
                   />
-                  <button 
+                  <button
                     onClick={() => setIsAvatarModalOpen(true)}
                     className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm transition anime-button flex-1 text-center"
                     style={{ fontFamily: "'Press Start 2P', sans-serif" }}
@@ -231,13 +346,24 @@ export default function Navbar({ user, onUpdateUser, onOpenChallenge, onOpenInsi
               </div>
 
               <div className="pt-4 border-t border-gray-700">
-                <button 
+                <button
                   onClick={handleLogout}
                   className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded text-sm transition anime-button flex items-center justify-center space-x-2"
                   style={{ fontFamily: "'Press Start 2P', sans-serif" }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
                   </svg>
                   <span>LOGOUT</span>
                 </button>
@@ -247,36 +373,51 @@ export default function Navbar({ user, onUpdateUser, onOpenChallenge, onOpenInsi
         </div>
       )}
 
-      {/* Avatar Selection Modal */}
       {isAvatarModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md border-2 border-yellow-500">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold" style={{ fontFamily: "'Press Start 2P', sans-serif" }}>SELECT AVATAR</h2>
-              <button 
+              <h2
+                className="text-lg font-bold"
+                style={{ fontFamily: "'Press Start 2P', sans-serif" }}
+              >
+                SELECT AVATAR
+              </h2>
+              <button
                 onClick={() => setIsAvatarModalOpen(false)}
                 className="text-gray-400 hover:text-white"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             <div className="grid grid-cols-3 gap-4 mb-6">
               {AVATARS.map((avatar) => (
-                <div 
+                <div
                   key={avatar}
                   onClick={() => setSelectedAvatar(avatar)}
                   className={`p-1 rounded-full cursor-pointer transition-all anime-button ${
-                    selectedAvatar === avatar 
-                      ? 'ring-3 ring-yellow-500 transform scale-110' 
-                      : 'hover:ring-2 hover:ring-gray-500'
+                    selectedAvatar === avatar
+                      ? "ring-3 ring-yellow-500 transform scale-110"
+                      : "hover:ring-2 hover:ring-gray-500"
                   }`}
                 >
-                  <img 
-                    src={avatar} 
-                    alt="Avatar option" 
+                  <img
+                    src={avatar}
+                    alt="Avatar option"
                     className="w-full h-auto rounded-full aspect-square object-cover"
                   />
                 </div>
@@ -284,14 +425,14 @@ export default function Navbar({ user, onUpdateUser, onOpenChallenge, onOpenInsi
             </div>
 
             <div className="flex space-x-3">
-              <button 
+              <button
                 onClick={() => setIsAvatarModalOpen(false)}
                 className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm transition anime-button"
                 style={{ fontFamily: "'Press Start 2P', sans-serif" }}
               >
                 CANCEL
               </button>
-              <button 
+              <button
                 onClick={handleSaveAvatar}
                 className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm transition anime-button"
                 style={{ fontFamily: "'Press Start 2P', sans-serif" }}

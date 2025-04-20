@@ -33,7 +33,7 @@ export default function Dashboard() {
     elixirs: 0,
     nextRankElixirs: 10000,
     completedChallenges: [],
-    taskHistory: []
+    taskHistory: [],
   });
 
   const [currentWallpaper, setCurrentWallpaper] = useState("E Rank Wallpaper");
@@ -56,7 +56,7 @@ export default function Dashboard() {
           setUser({
             ...userData.user,
             completedChallenges: userData.user.completedChallenges || [],
-            taskHistory: userData.user.taskHistory || []
+            taskHistory: userData.user.taskHistory || [],
           });
           setDailyQuests(userData.dailyQuests || []);
           setWeeklyDungeons(userData.weeklyDungeons || []);
@@ -170,18 +170,18 @@ export default function Dashboard() {
       user.elixirs + elixirReward,
       user.nextRankElixirs
     );
-    const updatedUser = { 
-      ...user, 
+    const updatedUser = {
+      ...user,
       elixirs: newElixirs,
       taskHistory: [
         ...(user.taskHistory || []),
         {
           type: category,
-          title: updatedTasks.find(t => t.id === id)?.title || 'Task',
+          title: updatedTasks.find((t) => t.id === id)?.title || "Task",
           elixirs: elixirReward,
-          completedAt
-        }
-      ]
+          completedAt,
+        },
+      ],
     };
 
     try {
@@ -259,24 +259,21 @@ export default function Dashboard() {
   };
 
   const handleChallengeComplete = async (elixirs) => {
-    const newElixirs = Math.min(
-      user.elixirs + elixirs,
-      user.nextRankElixirs
-    );
+    const newElixirs = Math.min(user.elixirs + elixirs, user.nextRankElixirs);
     const completedAt = new Date().toISOString();
-    const updatedUser = { 
-      ...user, 
+    const updatedUser = {
+      ...user,
       elixirs: newElixirs,
       completedChallenges: [...(user.completedChallenges || []), completedAt],
       taskHistory: [
         ...(user.taskHistory || []),
         {
-          type: 'Challenge',
-          title: 'Daily Challenge',
+          type: "Challenge",
+          title: "Daily Challenge",
           elixirs: 200,
-          completedAt
-        }
-      ]
+          completedAt,
+        },
+      ],
     };
 
     try {
@@ -296,7 +293,10 @@ export default function Dashboard() {
       <div className="bg-gray-900 min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4"></div>
-          <p className="text-yellow-500" style={{ fontFamily: "'Press Start 2P', sans-serif" }}>
+          <p
+            className="text-yellow-500"
+            style={{ fontFamily: "'Press Start 2P', sans-serif" }}
+          >
             LOADING QUEST...
           </p>
         </div>
@@ -306,22 +306,17 @@ export default function Dashboard() {
 
   return (
     <div
-      className="bg-gray-900 text-white min-h-screen"
+      className="bg-gray-900 text-white min-h-screen h-screen overflow-hidden"
       style={{
-        backgroundImage:
-          currentWallpaper === "E Rank Wallpaper"
-            ? 'url("/wallpapers/e-rank.jpg")'
-            : currentWallpaper === "D Rank Wallpaper"
-            ? 'url("/wallpapers/d-rank.jpg")'
-            : "",
+        backgroundImage: 'url("/wallpapers/e-rank.jpg")',
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
       {showOnboarding && <OnboardingModal onComplete={completeOnboarding} />}
-      <Navbar 
-        user={user} 
-        onUpdateUser={handleUserUpdate} 
+      <Navbar
+        user={user}
+        onUpdateUser={handleUserUpdate}
         onOpenChallenge={() => setIsChallengeModalOpen(true)}
         onOpenInsights={() => setIsInsightsModalOpen(true)}
       />
@@ -394,7 +389,7 @@ export default function Dashboard() {
           weeklyDungeons,
           monthlyGoals,
           completedChallenges: user.completedChallenges || [],
-          taskHistory: user.taskHistory || []
+          taskHistory: user.taskHistory || [],
         }}
       />
     </div>
