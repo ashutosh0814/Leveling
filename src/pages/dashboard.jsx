@@ -306,7 +306,7 @@ export default function Dashboard() {
 
   return (
     <div
-      className="bg-gray-900 text-white min-h-screen h-screen overflow-hidden"
+      className="bg-gray-900 text-white min-h-screen h-screen overflow-y-auto"
       style={{
         backgroundImage: 'url("/wallpapers/e-rank.jpg")',
         backgroundSize: "cover",
@@ -322,17 +322,17 @@ export default function Dashboard() {
       />
 
       {/* Challenge Button */}
-      <div className="flex justify-center mt-4">
+      <div className="flex justify-center mt-2 sm:mt-4 px-2 sm:px-0">
         <button
           onClick={() => setIsChallengeModalOpen(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-lg transition anime-button"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-lg transition anime-button w-full sm:w-auto text-center"
           style={{ fontFamily: "'Press Start 2P', sans-serif" }}
         >
           START DAILY CHALLENGE
         </button>
       </div>
 
-      <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="p-2 sm:p-4 grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4">
         <TaskSection
           title="Daily Quests"
           tasks={dailyQuests}

@@ -22,6 +22,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
   const [spawnRate, setSpawnRate] = useState(800); // Base spawn rate
   const [accuracy, setAccuracy] = useState({ hits: 0, misses: 0 });
   const [showTutorial, setShowTutorial] = useState(true);
+  const [concurrentAnts, setConcurrentAnts] = useState(1); // Number of ants to spawn at once
 
   // Refs
   const spawnIntervalRef = useRef(null);
@@ -83,12 +84,14 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     setAccuracy({ hits: 0, misses: 0 });
     setAntSpeed(1500);
     setSpawnRate(800);
+    setConcurrentAnts(1);
     setEnergy((prev) => prev - 1);
 
     // Start difficulty timer
     difficultyTimerRef.current = setInterval(() => {
-      setAntSpeed(prev => Math.max(500, prev * 0.95)); // Increase speed (lower value = faster)
-      setSpawnRate(prev => Math.max(300, prev * 0.95)); // Increase spawn rate
+      setAntSpeed(prev => Math.max(300, prev * 0.9)); // Increase speed (lower value = faster)
+      setSpawnRate(prev => Math.max(300, prev * 0.9)); // Increase spawn rate
+      setConcurrentAnts(prev => Math.min(3, prev + 0.2)); // Increase concurrent ants up to 3
     }, 10000); // Increase difficulty every 10 seconds
 
     startSpawningAnts();
@@ -103,7 +106,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     setGameOver(true);
     playSound("gameOver");
     
-    // Update highest score if current score is higher
     if (score > highestScore) {
       setHighestScore(score);
     }
@@ -119,7 +121,11 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     spawnIntervalRef.current = setInterval(() => {
       if (bossFight) return;
 
-      spawnAnt();
+      // Spawn multiple ants at once (1-3 ants)
+      const antsToSpawn = Math.floor(concurrentAnts) + (Math.random() < (concurrentAnts % 1) ? 1 : 0);
+      for (let i = 0; i < antsToSpawn; i++) {
+        spawnAnt();
+      }
 
       // Trigger boss fight every 10 ants
       const aliveAnts = ants.filter(ant => ant.alive);
@@ -142,12 +148,12 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
       { type: "bossy", points: 100, hp: 4, color: "black" },
     ];
 
-    // Ant distribution (35% basic, 35% elite, 15% rare, 10% tough, 5% bossy)
+    // Ant distribution
     const antTypeWeights = [0.35, 0.35, 0.15, 0.10, 0.05];
-
     let cumulativeWeight = 0;
     let selectedAntTypeIndex = 0;
     const randomValue = Math.random();
+    
     for (let i = 0; i < antTypeWeights.length; i++) {
       cumulativeWeight += antTypeWeights[i];
       if (randomValue <= cumulativeWeight) {
@@ -505,92 +511,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     };
   }, [gameActive, bossFight, ants]);
 
-  // Render tutorial modal
-  const renderTutorial = () => {
-    return (
-      <motion.div
-        className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        <motion.div
-          className="bg-gray-900 border-2 border-purple-600 rounded-lg p-6 max-w-md w-full mx-4"
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h2 className="text-2xl font-bold text-purple-400 mb-4">
-            Ant Nest Raid Tutorial
-          </h2>
-
-          <div className="space-y-4 text-gray-300 text-sm">
-            <p>
-              Welcome to the Ant Nest Raid! Your mission is to defeat the ant
-              colony and collect valuable Elixirs.
-            </p>
-
-            <div className="border-l-4 border-purple-500 pl-4">
-              <h3 className="text-lg font-semibold text-purple-300 mb-2">
-                Controls:
-              </h3>
-              <ul className="list-disc list-inside space-y-1">
-                <li>
-                  Use <span className="text-yellow-400">Arrow Keys</span> or
-                  swipe on touch devices to attack ants
-                </li>
-                <li>
-                  Press <span className="text-yellow-400">1</span> to use Shadow
-                  Slash (kills all ants)
-                </li>
-              </ul>
-            </div>
-
-            <div className="border-l-4 border-purple-500 pl-4">
-              <h3 className="text-lg font-semibold text-purple-300 mb-2">
-                Ant Types:
-              </h3>
-              <ul className="list-disc list-inside space-y-1">
-                <li><span className="text-yellow-600">Basic</span> - 1 hit</li>
-                <li><span className="text-red-500">Elite</span> - 2 hits</li>
-                <li><span className="text-purple-500">Rare</span> - 1 hit (high points)</li>
-                <li><span className="text-blue-500">Tough</span> - 3 hits</li>
-                <li><span className="text-black">Bossy</span> - 4 hits</li>
-              </ul>
-            </div>
-
-            <div className="border-l-4 border-purple-500 pl-4">
-              <h3 className="text-lg font-semibold text-purple-300 mb-2">
-                Boss Fights:
-              </h3>
-              <p>
-                Every 10 ants, a boss will appear! Attack quickly to defeat it.
-              </p>
-            </div>
-
-            <div className="border-l-4 border-purple-500 pl-4">
-              <h3 className="text-lg font-semibold text-purple-300 mb-2">
-                Energy System:
-              </h3>
-              <p>You have 3 energy per day to play.</p>
-            </div>
-          </div>
-
-          <div className="flex justify-center mt-6">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg shadow-lg text-sm"
-              onClick={() => setShowTutorial(false)}
-            >
-              Start Game
-            </motion.button>
-          </div>
-        </motion.div>
-      </motion.div>
-    );
-  };
-
   // Ant component
   const Ant = ({ ant, onClick, gameActive }) => {
     if (!ant.alive) return null;
@@ -649,17 +569,98 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     );
   };
 
+  // Render tutorial modal
+  const renderTutorial = () => {
+    return (
+      <motion.div
+        className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <motion.div
+          className="bg-gray-900 border-2 border-purple-600 rounded-lg p-6 max-w-md w-full mx-4"
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h2 className="text-2xl font-bold text-purple-400 mb-4">
+            Ant Nest Raid Tutorial
+          </h2>
+
+          <div className="space-y-4 text-gray-300 text-sm">
+            <p>
+              Welcome to the Ant Nest Raid! Your mission is to defeat the ant
+              colony and collect valuable Elixirs.
+            </p>
+
+            <div className="border-l-4 border-purple-500 pl-4">
+              <h3 className="text-lg font-semibold text-purple-300 mb-2">
+                Controls:
+              </h3>
+              <ul className="list-disc list-inside space-y-1">
+                <li>
+                  Use <span className="text-yellow-400">Arrow Keys</span> or
+                  swipe on touch devices to attack ants
+                </li>
+                <li>
+                  Press <span className="text-yellow-400">1</span> to use Shadow
+                  Slash (kills all ants)
+                </li>
+              </ul>
+            </div>
+
+            <div className="border-l-4 border-purple-500 pl-4">
+              <h3 className="text-lg font-semibold text-purple-300 mb-2">
+                Ant Types:
+              </h3>
+              <ul className="list-disc list-inside space-y-1">
+                <li><span className="text-yellow-600">Basic</span> - 1 hit</li>
+                <li><span className="text-red-500">Elite</span> - 2 hits</li>
+                <li><span className="text-purple-500">Rare</span> - 1 hit (high points)</li>
+                <li><span className="text-blue-500">Tough</span> - 3 hits</li>
+                <li><span className="text-black">Bossy</span> - 4 hits</li>
+              </ul>
+            </div>
+
+            <div className="border-l-4 border-purple-500 pl-4">
+              <h3 className="text-lg font-semibold text-purple-300 mb-2">
+                New Features:
+              </h3>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Ants will come faster as you progress</li>
+                <li>Multiple ants can attack simultaneously</li>
+                <li>Game adapts to your screen size</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex justify-center mt-6">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg shadow-lg text-sm"
+              onClick={() => setShowTutorial(false)}
+            >
+              Start Game
+            </motion.button>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  };
+
   // Render the game UI
   return (
-    <div className="fixed inset-0 bg-gray-900 text-white flex flex-col z-50 overflow-hidden">
+    <div className="fixed inset-0 bg-gray-900 text-white flex flex-col z-50 overflow-hidden p-2">
       {/* Close Button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-50 p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition shadow-lg"
+        className="absolute top-2 right-2 z-50 p-1 rounded-full bg-gray-800 hover:bg-gray-700 transition shadow-lg"
         aria-label="Close game"
       >
         <svg
-          className="w-6 h-6"
+          className="w-5 h-5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -675,30 +676,30 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
 
       {/* Game Title */}
       <motion.div
-        className="text-center pt-4"
+        className="text-center pt-2"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
+        <h1 className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
           Ant Nest Raid
         </h1>
-        <p className="text-purple-300 mt-1 text-xs">
+        <p className="text-purple-300 text-xs">
           Jeju Island • Solo Leveling
         </p>
       </motion.div>
 
       {/* Main Game Area */}
-      <div className="flex flex-col md:flex-row flex-1 w-full p-4 gap-4">
+      <div className="flex flex-col md:flex-row flex-1 w-full p-1 gap-2">
         {/* Left Side - Game Circle */}
-        <div className="flex-1 flex items-center justify-center min-h-[50vh] md:min-h-auto md:w-2/3">
+        <div className="flex-1 flex items-center justify-center min-h-[40vh] md:min-h-auto">
           <div
             ref={gameAreaRef}
-            className="relative w-full h-full max-w-[400px] max-h-[400px] aspect-square bg-black rounded-full border-4 border-yellow-600 overflow-hidden mx-auto shadow-lg"
+            className="relative w-full h-full max-w-[min(400px,80vw)] max-h-[min(400px,80vw)] aspect-square bg-black rounded-full border-4 border-yellow-600 overflow-hidden mx-auto shadow-lg"
           >
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-gray-900 border-4 border-red-600 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-red-600 animate-pulse"></div>
+              <div className="w-12 h-12 rounded-full bg-gray-900 border-4 border-red-600 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-red-600 animate-pulse"></div>
               </div>
             </div>
 
@@ -714,7 +715,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
             {bossFight && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <motion.div
-                  className="w-32 h-32 rounded-full bg-red-900 border-4 border-red-600 flex items-center justify-center cursor-pointer shadow-lg"
+                  className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-600 flex items-center justify-center cursor-pointer shadow-lg"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   whileHover={{ scale: 1.1 }}
@@ -722,8 +723,8 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                   onClick={attackBoss}
                 >
                   <div className="text-center">
-                    <div className="text-xl font-bold text-red-400">BOSS</div>
-                    <div className="w-full h-2 bg-gray-800 rounded-full mt-2 overflow-hidden">
+                    <div className="text-lg font-bold text-red-400">BOSS</div>
+                    <div className="w-full h-2 bg-gray-800 rounded-full mt-1 overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-red-500 to-yellow-500"
                         style={{ width: `${bossHp}%` }}
@@ -737,83 +738,83 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
 
             {activePowerUps.doubleElixir && (
               <motion.div
-                className="absolute top-4 left-4 bg-yellow-900 bg-opacity-70 border border-yellow-500 rounded-full px-2 py-1 shadow"
+                className="absolute top-2 left-2 bg-yellow-900 bg-opacity-70 border border-yellow-500 rounded-full px-2 py-1 shadow text-xs"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
               >
-                <span className="text-yellow-300 text-xs">2x Elixir</span>
+                <span className="text-yellow-300">2x Elixir</span>
               </motion.div>
             )}
 
             {activePowerUps.smokeScreen && (
               <motion.div
-                className="absolute top-4 right-4 bg-gray-700 bg-opacity-70 border border-gray-500 rounded-full px-2 py-1 shadow"
+                className="absolute top-2 right-2 bg-gray-700 bg-opacity-70 border border-gray-500 rounded-full px-2 py-1 shadow text-xs"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
               >
-                <span className="text-gray-300 text-xs">Smoke Screen</span>
+                <span className="text-gray-300">Smoke Screen</span>
               </motion.div>
             )}
           </div>
         </div>
 
         {/* Right Side - Stats and Controls */}
-        <div className="w-full md:w-1/3 flex flex-col gap-3">
+        <div className="w-full md:w-1/3 flex flex-col gap-2">
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-gray-800 rounded-lg p-2 text-center border border-gray-700 shadow">
-              <p className="text-gray-400 text-xs truncate">HP</p>
-              <div className="mt-1 h-2 w-full bg-gray-700 rounded-full overflow-hidden">
+          <div className="grid grid-cols-2 gap-1">
+            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+              <p className="text-gray-400 truncate">HP</p>
+              <div className="mt-1 h-1 w-full bg-gray-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-300"
                   style={{ width: `${hp}%` }}
                 ></div>
               </div>
-              <p className="mt-1 text-sm font-bold">{hp}/100</p>
+              <p className="text-xs font-bold">{hp}/100</p>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-2 text-center border border-gray-700 shadow">
-              <p className="text-gray-400 text-xs truncate">Wave</p>
-              <p className="text-lg font-bold text-purple-400">{wave}</p>
+            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+              <p className="text-gray-400 truncate">Wave</p>
+              <p className="text-sm font-bold text-purple-400">{wave}</p>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-2 text-center border border-gray-700 shadow">
-              <p className="text-gray-400 text-xs truncate">Score</p>
-              <p className="text-lg font-bold text-yellow-400">{score}</p>
+            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+              <p className="text-gray-400 truncate">Score</p>
+              <p className="text-sm font-bold text-yellow-400">{score}</p>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-2 text-center border border-gray-700 shadow">
-              <p className="text-gray-400 text-xs truncate">High Score</p>
-              <p className="text-lg font-bold text-purple-400">{highestScore}</p>
+            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+              <p className="text-gray-400 truncate">High Score</p>
+              <p className="text-sm font-bold text-purple-400">{highestScore}</p>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-2 text-center border border-gray-700 shadow">
-              <p className="text-gray-400 text-xs truncate">Elixirs</p>
+            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+              <p className="text-gray-400 truncate">Elixirs</p>
               <div className="flex items-center justify-center">
-                <p className="text-lg font-bold text-green-400">{elixirs}</p>
+                <p className="text-sm font-bold text-green-400">{elixirs}</p>
                 <span className="text-gray-500 mx-1">/</span>
                 <p className="text-xs text-gray-300">{totalElixirs}</p>
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-2 text-center border border-gray-700 shadow">
-              <p className="text-gray-400 text-xs truncate">Speed</p>
-              <p className="text-lg font-bold text-blue-400">
+            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+              <p className="text-gray-400 truncate">Speed</p>
+              <p className="text-sm font-bold text-blue-400">
                 {Math.round((1500 / antSpeed) * 100)}%
               </p>
             </div>
           </div>
 
           {/* Energy and Buff */}
-          <div className="bg-gray-800 rounded-lg p-3 border border-gray-700 shadow">
+          <div className="bg-gray-800 rounded p-2 border border-gray-700 shadow text-xs">
             <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-400 text-xs">Energy:</span>
+              <div className="flex items-center space-x-1">
+                <span className="text-gray-400">Energy:</span>
                 <div className="flex space-x-1">
                   {[...Array(3)].map((_, i) => (
                     <div
                       key={i}
-                      className={`w-3 h-3 rounded-full ${
+                      className={`w-2 h-2 rounded-full ${
                         i < energy ? "bg-blue-500" : "bg-gray-700"
                       }`}
                     />
@@ -823,12 +824,12 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
 
               {buffActive && (
                 <motion.div
-                  className="bg-purple-900 bg-opacity-70 border border-purple-500 rounded-full px-2 py-1 flex items-center"
+                  className="bg-purple-900 bg-opacity-70 border border-purple-500 rounded-full px-1 py-0.5 flex items-center text-xs"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                 >
-                  <span className="text-purple-300 text-xs">Buff</span>
-                  <span className="text-yellow-300 text-xs ml-1">
+                  <span className="text-purple-300">Buff</span>
+                  <span className="text-yellow-300 ml-1">
                     {formatBuffTime(buffTimeRemaining)}
                   </span>
                 </motion.div>
@@ -837,16 +838,16 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
           </div>
 
           {/* Direction Controls */}
-          <div className="bg-gray-800 rounded-lg p-3 border border-gray-700 shadow">
-            <p className="text-gray-300 text-xs mb-2 text-center">
+          <div className="bg-gray-800 rounded p-2 border border-gray-700 shadow text-xs">
+            <p className="text-gray-300 mb-1 text-center">
               Attack Directions
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1">
               <div></div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-gray-700 hover:bg-gray-600 rounded-lg p-3 flex items-center justify-center border border-gray-600"
+                className="bg-gray-700 hover:bg-gray-600 rounded p-2 flex items-center justify-center border border-gray-600"
                 onClick={() => {
                   if (bossFight) attackBoss();
                   else {
@@ -858,7 +859,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                 }}
               >
                 <svg
-                  className="w-5 h-5 text-white"
+                  className="w-4 h-4 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -876,7 +877,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-gray-700 hover:bg-gray-600 rounded-lg p-3 flex items-center justify-center border border-gray-600"
+                className="bg-gray-700 hover:bg-gray-600 rounded p-2 flex items-center justify-center border border-gray-600"
                 onClick={() => {
                   if (bossFight) attackBoss();
                   else {
@@ -889,7 +890,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                 }}
               >
                 <svg
-                  className="w-5 h-5 text-white"
+                  className="w-4 h-4 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -906,7 +907,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-gray-700 hover:bg-gray-600 rounded-lg p-3 flex items-center justify-center border border-gray-600"
+                className="bg-gray-700 hover:bg-gray-600 rounded p-2 flex items-center justify-center border border-gray-600"
                 onClick={() => {
                   if (bossFight) attackBoss();
                   else {
@@ -919,7 +920,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                 }}
               >
                 <svg
-                  className="w-5 h-5 text-white"
+                  className="w-4 h-4 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -936,7 +937,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-gray-700 hover:bg-gray-600 rounded-lg p-3 flex items-center justify-center border border-gray-600"
+                className="bg-gray-700 hover:bg-gray-600 rounded p-2 flex items-center justify-center border border-gray-600"
                 onClick={() => {
                   if (bossFight) attackBoss();
                   else {
@@ -949,7 +950,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                 }}
               >
                 <svg
-                  className="w-5 h-5 text-white"
+                  className="w-4 h-4 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -966,15 +967,15 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
           </div>
 
           {/* Skills */}
-          <div className="bg-gray-800 rounded-lg p-3 border border-gray-700 shadow">
-            <p className="text-gray-300 text-xs mb-2 text-center">Skills</p>
+          <div className="bg-gray-800 rounded p-2 border border-gray-700 shadow text-xs">
+            <p className="text-gray-300 mb-1 text-center">Skills</p>
             <div className="flex justify-center">
               {Object.entries(skills).map(([key, skill]) => (
                 <motion.button
                   key={key}
                   whileHover={{ scale: skill.isReady ? 1.05 : 1 }}
                   whileTap={{ scale: skill.isReady ? 0.95 : 1 }}
-                  className={`rounded-lg p-2 flex flex-col items-center justify-center border w-full ${
+                  className={`rounded p-1 flex flex-col items-center justify-center border w-full ${
                     skill.isReady
                       ? "bg-purple-800 hover:bg-purple-700 border-purple-600"
                       : "bg-gray-700 border-gray-600"
@@ -1006,12 +1007,12 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
           </div>
 
           {/* Game Controls */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1">
             {!gameActive ? (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="col-span-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm"
+                className="col-span-2 bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded shadow text-xs"
                 onClick={startGame}
                 disabled={energy <= 0}
               >
@@ -1022,7 +1023,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm"
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded shadow text-xs"
                   onClick={handleGameOver}
                 >
                   Surrender
@@ -1030,7 +1031,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded shadow text-xs"
                   onClick={onClose}
                 >
                   Exit
@@ -1038,13 +1039,14 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
               </>
             )}
           </div>
+
           {/* Accuracy Stats */}
           {gameActive && (
-            <div className="bg-gray-800 rounded-lg p-2 text-center border border-gray-700 shadow">
+            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-gray-400 text-xs">Accuracy</p>
-                  <p className="text-sm font-bold">
+                  <p className="text-gray-400">Accuracy</p>
+                  <p className="font-bold">
                     {accuracy.hits + accuracy.misses > 0
                       ? Math.round(
                           (accuracy.hits / (accuracy.hits + accuracy.misses)) * 100
@@ -1054,14 +1056,14 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-400 text-xs">Killed</p>
-                  <p className="text-sm font-bold text-green-400">
+                  <p className="text-gray-400">Killed</p>
+                  <p className="font-bold text-green-400">
                     {accuracy.hits}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-400 text-xs">Missed</p>
-                  <p className="text-sm font-bold text-red-400">
+                  <p className="text-gray-400">Missed</p>
+                  <p className="font-bold text-red-400">
                     {accuracy.misses}
                   </p>
                 </div>
@@ -1076,11 +1078,11 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="fixed bottom-4 left-4 bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-full shadow-lg z-10"
+          className="fixed bottom-2 left-2 bg-gray-800 hover:bg-gray-700 text-white p-1 rounded-full shadow-lg z-10"
           onClick={() => setShowTutorial(true)}
         >
           <svg
-            className="w-5 h-5"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

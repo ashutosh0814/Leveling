@@ -1,5 +1,4 @@
 export default function TaskCard({ task, onComplete, onEdit, onDelete }) {
-  // Get difficulty from the task object
   const difficulty = task.difficulty || 'Easy';
   
   const difficultyColors = {
@@ -10,15 +9,15 @@ export default function TaskCard({ task, onComplete, onEdit, onDelete }) {
 
   return (
     <div
-      className={`relative bg-gray-800 p-3 rounded-lg border-l-4 ${
+      className={`relative bg-gray-800 p-2 sm:p-3 rounded-lg border-l-4 ${
         task.completed 
           ? 'border-gray-500 bg-gray-700' 
           : difficultyColors[difficulty] || 'border-yellow-500'
-      } mb-2 flex items-start justify-between transition-all hover:bg-gray-750`}
+      } mb-1 sm:mb-2 flex items-start justify-between transition-all hover:bg-gray-750`}
     >
       <div className="flex-1 min-w-0">
         <h4
-          className={`text-xs font-bold truncate ${
+          className={`text-xs sm:text-xs truncate ${
             task.completed ? "line-through text-gray-400" : "text-white"
           }`}
           style={{ fontFamily: "'Press Start 2P', sans-serif" }}
@@ -36,11 +35,11 @@ export default function TaskCard({ task, onComplete, onEdit, onDelete }) {
         )}
       </div>
 
-      <div className="flex space-x-1 ml-2">
+      <div className="flex space-x-1 ml-1 sm:ml-2">
         {!task.completed && (
           <button
             onClick={() => onComplete(task.id)}
-            className="bg-green-600 hover:bg-green-700 text-white p-1 rounded text-xs"
+            className="bg-green-600 hover:bg-green-700 text-white p-0.5 sm:p-1 rounded text-xs"
             style={{ fontFamily: "'Press Start 2P', sans-serif" }}
             title="Complete"
           >
@@ -49,7 +48,7 @@ export default function TaskCard({ task, onComplete, onEdit, onDelete }) {
         )}
         <button
           onClick={() => onEdit(task.id)}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-1 rounded text-xs"
+          className="bg-blue-600 hover:bg-blue-700 text-white p-0.5 sm:p-1 rounded text-xs"
           style={{ fontFamily: "'Press Start 2P', sans-serif" }}
           title="Edit"
         >
@@ -57,7 +56,7 @@ export default function TaskCard({ task, onComplete, onEdit, onDelete }) {
         </button>
         <button
           onClick={() => onDelete(task.id)}
-          className="bg-red-600 hover:bg-red-700 text-white p-1 rounded text-xs"
+          className="bg-red-600 hover:bg-red-700 text-white p-0.5 sm:p-1 rounded text-xs"
           style={{ fontFamily: "'Press Start 2P', sans-serif" }}
           title="Delete"
         >
