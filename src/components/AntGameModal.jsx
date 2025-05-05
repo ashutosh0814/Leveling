@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { updateUserData } from "../utils/firebase";
 
 const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
-  // Game states
+  // Game states (unchanged)
   const [gameActive, setGameActive] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [hp, setHp] = useState(user?.health || 100);
@@ -18,19 +18,17 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
   const [energy, setEnergy] = useState(user?.energy || 3);
   const [buffActive, setBuffActive] = useState(false);
   const [buffTimeRemaining, setBuffTimeRemaining] = useState(0);
-  const [antSpeed, setAntSpeed] = useState(1500); // Base speed
-  const [spawnRate, setSpawnRate] = useState(800); // Base spawn rate
+  const [antSpeed, setAntSpeed] = useState(1500);
+  const [spawnRate, setSpawnRate] = useState(800);
   const [accuracy, setAccuracy] = useState({ hits: 0, misses: 0 });
   const [showTutorial, setShowTutorial] = useState(true);
-  const [concurrentAnts, setConcurrentAnts] = useState(1); // Number of ants to spawn at once
+  const [concurrentAnts, setConcurrentAnts] = useState(1);
 
-  // Refs
   const spawnIntervalRef = useRef(null);
   const gameAreaRef = useRef(null);
   const audioRef = useRef(null);
   const difficultyTimerRef = useRef(null);
 
-  // Skill system
   const [skills, setSkills] = useState({
     shadowSlash: {
       name: "Slash",
@@ -38,16 +36,14 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
       cooldown: 15000,
       isReady: true,
       lastUsed: 0,
-    }
+    },
   });
 
-  // Power-ups and debuffs
   const [activePowerUps, setActivePowerUps] = useState({
     doubleElixir: false,
     smokeScreen: false,
   });
 
-  // Sound effects
   const sounds = {
     hit: "/sounds/hit.mp3",
     miss: "/sounds/miss.mp3",
@@ -58,7 +54,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     powerUp: "/sounds/powerup.mp3",
   };
 
-  // Play sound effect
   const playSound = (soundName) => {
     if (audioRef.current) {
       audioRef.current.src = sounds[soundName];
@@ -66,7 +61,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     }
   };
 
-  // Initialize game
   const startGame = () => {
     if (energy <= 0) {
       alert("No energy left! Wait for daily reset or purchase more energy.");
@@ -87,18 +81,16 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     setConcurrentAnts(1);
     setEnergy((prev) => prev - 1);
 
-    // Start difficulty timer
     difficultyTimerRef.current = setInterval(() => {
-      setAntSpeed(prev => Math.max(300, prev * 0.9)); // Increase speed (lower value = faster)
-      setSpawnRate(prev => Math.max(300, prev * 0.9)); // Increase spawn rate
-      setConcurrentAnts(prev => Math.min(3, prev + 0.2)); // Increase concurrent ants up to 3
-    }, 10000); // Increase difficulty every 10 seconds
+      setAntSpeed(prev => Math.max(300, prev * 0.9));
+      setSpawnRate(prev => Math.max(300, prev * 0.9));
+      setConcurrentAnts(prev => Math.min(3, prev + 0.2));
+    }, 10000);
 
     startSpawningAnts();
     saveGameState();
   };
 
-  // Handle game over
   const handleGameOver = () => {
     clearInterval(spawnIntervalRef.current);
     clearInterval(difficultyTimerRef.current);
@@ -112,7 +104,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     saveGameState();
   };
 
-  // Start spawning ants
   const startSpawningAnts = () => {
     if (spawnIntervalRef.current) {
       clearInterval(spawnIntervalRef.current);
@@ -121,13 +112,11 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     spawnIntervalRef.current = setInterval(() => {
       if (bossFight) return;
 
-      // Spawn multiple ants at once (1-3 ants)
       const antsToSpawn = Math.floor(concurrentAnts) + (Math.random() < (concurrentAnts % 1) ? 1 : 0);
       for (let i = 0; i < antsToSpawn; i++) {
         spawnAnt();
       }
 
-      // Trigger boss fight every 10 ants
       const aliveAnts = ants.filter(ant => ant.alive);
       if (aliveAnts.length > 0 && aliveAnts.length % 10 === 0) {
         triggerBossFight();
@@ -135,7 +124,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     }, spawnRate);
   };
 
-  // Spawn a new ant
   const spawnAnt = () => {
     const directions = ["up", "down", "left", "right"];
     const randomDirection = directions[Math.floor(Math.random() * directions.length)];
@@ -148,7 +136,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
       { type: "bossy", points: 100, hp: 4, color: "black" },
     ];
 
-    // Ant distribution
     const antTypeWeights = [0.35, 0.35, 0.15, 0.10, 0.05];
     let cumulativeWeight = 0;
     let selectedAntTypeIndex = 0;
@@ -175,7 +162,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     setAnts((prevAnts) => [...prevAnts, newAnt]);
   };
 
-  // Trigger boss fight
   const triggerBossFight = () => {
     clearInterval(spawnIntervalRef.current);
     setBossFight(true);
@@ -184,7 +170,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     setAnts([]);
   };
 
-  // End boss fight and continue game
   const endBossFight = () => {
     setBossFight(false);
     setWave((prev) => prev + 1);
@@ -192,7 +177,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     triggerRandomEffect();
   };
 
-  // Attack boss
   const attackBoss = () => {
     setBossHp((prev) => {
       const damage = buffActive ? 12 : 10;
@@ -217,7 +201,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     });
   };
 
-  // Activate hunter buff
   const activateHunterBuff = () => {
     setBuffActive(true);
     setBuffTimeRemaining(24 * 60 * 60);
@@ -234,7 +217,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     }, 1000);
   };
 
-  // Handle ant click
   const handleAntClick = (antId, clickedDirection) => {
     setAnts((prevAnts) =>
       prevAnts.map((ant) => {
@@ -271,7 +253,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     saveGameState();
   };
 
-  // Use skill
   const useSkill = (skillName) => {
     const now = Date.now();
     const skill = skills[skillName];
@@ -304,7 +285,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     }, skill.cooldown);
   };
 
-  // Trigger random power-up or debuff
   const triggerRandomEffect = () => {
     const effects = [
       { type: "doubleElixir", positive: true, duration: 10000 },
@@ -327,14 +307,12 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     }, randomEffect.duration);
   };
 
-  // Format time for buff display
   const formatBuffTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     return `${hours}h ${minutes}m`;
   };
 
-  // Update ant progress
   useEffect(() => {
     if (!gameActive || bossFight) return;
 
@@ -377,7 +355,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     return () => clearInterval(progressInterval);
   }, [gameActive, bossFight, antSpeed]);
 
-  // Reset skill cooldowns
   useEffect(() => {
     const skillCooldownCheck = setInterval(() => {
       const now = Date.now();
@@ -399,7 +376,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     return () => clearInterval(skillCooldownCheck);
   }, []);
 
-  // Save game state to Firebase
   const saveGameState = () => {
     if (user?.uid) {
       const updatedUser = {
@@ -421,7 +397,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     }
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (spawnIntervalRef.current) {
@@ -434,7 +409,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     };
   }, []);
 
-  // Handle input (keyboard and touch)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!gameActive) return;
@@ -511,7 +485,6 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     };
   }, [gameActive, bossFight, ants]);
 
-  // Ant component
   const Ant = ({ ant, onClick, gameActive }) => {
     if (!ant.alive) return null;
 
@@ -569,33 +542,32 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     );
   };
 
-  // Render tutorial modal
   const renderTutorial = () => {
     return (
       <motion.div
-        className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
         <motion.div
-          className="bg-gray-900 border-2 border-purple-600 rounded-lg p-6 max-w-md w-full mx-4"
+          className="bg-gray-900 border-2 border-purple-600 rounded-lg p-4 max-w-md w-full max-h-[80vh] overflow-y-auto"
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <h2 className="text-2xl font-bold text-purple-400 mb-4">
+          <h2 className="text-xl font-bold text-purple-400 mb-3">
             Ant Nest Raid Tutorial
           </h2>
 
-          <div className="space-y-4 text-gray-300 text-sm">
+          <div className="space-y-3 text-gray-300 text-xs">
             <p>
               Welcome to the Ant Nest Raid! Your mission is to defeat the ant
               colony and collect valuable Elixirs.
             </p>
 
-            <div className="border-l-4 border-purple-500 pl-4">
-              <h3 className="text-lg font-semibold text-purple-300 mb-2">
+            <div className="border-l-4 border-purple-500 pl-3">
+              <h3 className="text-base font-semibold text-purple-300 mb-1">
                 Controls:
               </h3>
               <ul className="list-disc list-inside space-y-1">
@@ -610,8 +582,8 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
               </ul>
             </div>
 
-            <div className="border-l-4 border-purple-500 pl-4">
-              <h3 className="text-lg font-semibold text-purple-300 mb-2">
+            <div className="border-l-4 border-purple-500 pl-3">
+              <h3 className="text-base font-semibold text-purple-300 mb-1">
                 Ant Types:
               </h3>
               <ul className="list-disc list-inside space-y-1">
@@ -623,8 +595,8 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
               </ul>
             </div>
 
-            <div className="border-l-4 border-purple-500 pl-4">
-              <h3 className="text-lg font-semibold text-purple-300 mb-2">
+            <div className="border-l-4 border-purple-500 pl-3">
+              <h3 className="text-base font-semibold text-purple-300 mb-1">
                 New Features:
               </h3>
               <ul className="list-disc list-inside space-y-1">
@@ -635,11 +607,11 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
             </div>
           </div>
 
-          <div className="flex justify-center mt-6">
+          <div className="flex justify-center mt-4">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg shadow-lg text-sm"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-4 rounded-lg shadow-lg text-xs"
               onClick={() => setShowTutorial(false)}
             >
               Start Game
@@ -650,13 +622,12 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
     );
   };
 
-  // Render the game UI
   return (
-    <div className="fixed inset-0 bg-gray-900 text-white flex flex-col z-50 overflow-hidden p-2">
+    <div className="fixed inset-0 bg-gray-900 text-white flex flex-col z-50 overflow-hidden">
       {/* Close Button */}
       <button
         onClick={onClose}
-        className="absolute top-2 right-2 z-50 p-1 rounded-full bg-gray-800 hover:bg-gray-700 transition shadow-lg"
+        className="absolute top-3 right-3 z-50 p-1 rounded-full bg-gray-800 hover:bg-gray-700 transition shadow-lg"
         aria-label="Close game"
       >
         <svg
@@ -676,12 +647,12 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
 
       {/* Game Title */}
       <motion.div
-        className="text-center pt-2"
+        className="text-center pt-3 px-4"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <h1 className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
+        <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
           Ant Nest Raid
         </h1>
         <p className="text-purple-300 text-xs">
@@ -689,17 +660,17 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
         </p>
       </motion.div>
 
-      {/* Main Game Area */}
-      <div className="flex flex-col md:flex-row flex-1 w-full p-1 gap-2">
-        {/* Left Side - Game Circle */}
-        <div className="flex-1 flex items-center justify-center min-h-[40vh] md:min-h-auto">
+      {/* Main Game Layout */}
+      <div className="flex flex-col md:flex-row items-center justify-center flex-1 w-full p-4 gap-4 md:gap-6 overflow-hidden">
+        {/* Left: Game Circle */}
+        <div className="flex justify-center items-center w-full md:w-1/2 max-w-[400px] h-[80vw] md:h-auto aspect-square">
           <div
             ref={gameAreaRef}
-            className="relative w-full h-full max-w-[min(400px,80vw)] max-h-[min(400px,80vw)] aspect-square bg-black rounded-full border-4 border-yellow-600 overflow-hidden mx-auto shadow-lg"
+            className="relative w-full aspect-square bg-black rounded-full border-4 border-yellow-600 overflow-hidden shadow-lg"
           >
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-gray-900 border-4 border-red-600 flex items-center justify-center">
-                <div className="w-6 h-6 rounded-full bg-red-600 animate-pulse"></div>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-900 border-4 border-red-600 flex items-center justify-center">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-600 animate-pulse"></div>
               </div>
             </div>
 
@@ -715,7 +686,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
             {bossFight && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <motion.div
-                  className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-600 flex items-center justify-center cursor-pointer shadow-lg"
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-red-900 border-4 border-red-600 flex items-center justify-center cursor-pointer shadow-lg"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   whileHover={{ scale: 1.1 }}
@@ -723,7 +694,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                   onClick={attackBoss}
                 >
                   <div className="text-center">
-                    <div className="text-lg font-bold text-red-400">BOSS</div>
+                    <div className="text-base sm:text-lg font-bold text-red-400">BOSS</div>
                     <div className="w-full h-2 bg-gray-800 rounded-full mt-1 overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-red-500 to-yellow-500"
@@ -758,11 +729,11 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
           </div>
         </div>
 
-        {/* Right Side - Stats and Controls */}
-        <div className="w-full md:w-1/3 flex flex-col gap-2">
+        {/* Right: Stats Panel */}
+        <div className="flex flex-col w-full md:w-1/2 max-w-[350px] space-y-3 min-w-0 overflow-y-auto">
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 gap-1">
-            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full">
+            <div className="bg-gray-800 rounded p-2 text-center border border-gray-700 shadow text-xs">
               <p className="text-gray-400 truncate">HP</p>
               <div className="mt-1 h-1 w-full bg-gray-700 rounded-full overflow-hidden">
                 <div
@@ -773,33 +744,33 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
               <p className="text-xs font-bold">{hp}/100</p>
             </div>
 
-            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+            <div className="bg-gray-800 rounded p-2 text-center border border-gray-700 shadow text-xs">
               <p className="text-gray-400 truncate">Wave</p>
-              <p className="text-sm font-bold text-purple-400">{wave}</p>
+              <p className="text-xs sm:text-sm font-bold text-purple-400">{wave}</p>
             </div>
 
-            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+            <div className="bg-gray-800 rounded p-2 text-center border border-gray-700 shadow text-xs">
               <p className="text-gray-400 truncate">Score</p>
-              <p className="text-sm font-bold text-yellow-400">{score}</p>
+              <p className="text-xs sm:text-sm font-bold text-yellow-400">{score}</p>
             </div>
 
-            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+            <div className="bg-gray-800 rounded p-2 text-center border border-gray-700 shadow text-xs">
               <p className="text-gray-400 truncate">High Score</p>
-              <p className="text-sm font-bold text-purple-400">{highestScore}</p>
+              <p className="text-xs sm:text-sm font-bold text-purple-400">{highestScore}</p>
             </div>
 
-            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+            <div className="bg-gray-800 rounded p-2 text-center border border-gray-700 shadow text-xs">
               <p className="text-gray-400 truncate">Elixirs</p>
               <div className="flex items-center justify-center">
-                <p className="text-sm font-bold text-green-400">{elixirs}</p>
+                <p className="text-xs sm:text-sm font-bold text-green-400">{elixirs}</p>
                 <span className="text-gray-500 mx-1">/</span>
                 <p className="text-xs text-gray-300">{totalElixirs}</p>
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+            <div className="bg-gray-800 rounded p-2 text-center border border-gray-700 shadow text-xs">
               <p className="text-gray-400 truncate">Speed</p>
-              <p className="text-sm font-bold text-blue-400">
+              <p className="text-xs sm:text-sm font-bold text-blue-400">
                 {Math.round((1500 / antSpeed) * 100)}%
               </p>
             </div>
@@ -837,7 +808,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
             </div>
           </div>
 
-          {/* Direction Controls */}
+          {/* Attack Direction Buttons */}
           <div className="bg-gray-800 rounded p-2 border border-gray-700 shadow text-xs">
             <p className="text-gray-300 mb-1 text-center">
               Attack Directions
@@ -1007,12 +978,12 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
           </div>
 
           {/* Game Controls */}
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-2">
             {!gameActive ? (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="col-span-2 bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded shadow text-xs"
+                className="col-span-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-2 rounded shadow text-xs"
                 onClick={startGame}
                 disabled={energy <= 0}
               >
@@ -1023,7 +994,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded shadow text-xs"
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-2 rounded shadow text-xs"
                   onClick={handleGameOver}
                 >
                   Surrender
@@ -1031,7 +1002,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded shadow text-xs"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded shadow text-xs"
                   onClick={onClose}
                 >
                   Exit
@@ -1042,7 +1013,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
 
           {/* Accuracy Stats */}
           {gameActive && (
-            <div className="bg-gray-800 rounded p-1 text-center border border-gray-700 shadow text-xs">
+            <div className="bg-gray-800 rounded p-2 text-center border border-gray-700 shadow text-xs">
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-gray-400">Accuracy</p>
@@ -1078,7 +1049,7 @@ const AntNestRaidGame = ({ user, onClose, onUpdateUser }) => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="fixed bottom-2 left-2 bg-gray-800 hover:bg-gray-700 text-white p-1 rounded-full shadow-lg z-10"
+          className="fixed bottom-3 left-3 bg-gray-800 hover:bg-gray-700 text-white p-1 rounded-full shadow-lg z-10"
           onClick={() => setShowTutorial(true)}
         >
           <svg

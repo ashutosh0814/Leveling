@@ -114,33 +114,33 @@ export default function Navbar({
             </h2>
             <p className="text-xs text-gray-300">RANK: {user?.rank || "E"}</p>
           </div>
-          
+
           {/* Mobile Menu Toggle Button */}
-          <button 
+          <button
             className="md:hidden p-1 rounded-lg hover:bg-gray-700 transition"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle Menu"
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-6 w-6" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
               {isMobileMenuOpen ? (
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M6 18L18 6M6 6l12 12" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
                 />
               ) : (
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M4 6h16M4 12h16M4 18h16" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
                 />
               )}
             </svg>
@@ -433,11 +433,11 @@ export default function Navbar({
 
       {/* Settings Modal */}
       {isSettingsOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md border-2 border-yellow-500">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-[90vw] sm:max-w-md md:max-w-lg lg:max-w-xl border-2 border-yellow-500 overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-center mb-4">
               <h2
-                className="text-lg md:text-xl font-bold"
+                className="text-sm sm:text-lg md:text-xl font-bold"
                 style={{ fontFamily: "'Press Start 2P', sans-serif" }}
               >
                 USER SETTINGS
@@ -448,7 +448,7 @@ export default function Navbar({
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
+                  className="h-5 w-5 sm:h-6 sm:w-6"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -463,27 +463,27 @@ export default function Navbar({
               </button>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               <div>
                 <label
-                  className="block text-sm font-medium mb-2"
+                  className="block text-xs sm:text-sm font-medium mb-2"
                   style={{ fontFamily: "'Press Start 2P', sans-serif" }}
                 >
                   CHANGE NAME
                 </label>
-                <div className="flex space-x-2 items-center">
-                  <div className="text-gray-300 text-sm">Hunter</div>
+                <div className="flex flex-col sm:flex-row sm:space-x-2 items-center space-y-2 sm:space-y-0">
+                  <div className="text-gray-300 text-xs sm:text-sm">Hunter</div>
                   <input
                     type="text"
                     value={tempName}
                     onChange={handleNameChange}
-                    className="flex-1 bg-gray-700 text-white px-3 py-2 rounded text-sm border border-gray-600 focus:ring-1 focus:ring-yellow-500"
+                    className="flex-1 w-full bg-gray-700 text-white px-3 py-2 rounded text-xs sm:text-sm border border-gray-600 focus:ring-1 focus:ring-yellow-500"
                     maxLength={10}
                     placeholder="Name (max 10 chars)"
                   />
                   <button
                     onClick={handleSaveName}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm transition anime-button"
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm transition anime-button w-full sm:w-auto"
                     style={{ fontFamily: "'Press Start 2P', sans-serif" }}
                   >
                     SAVE
@@ -499,7 +499,7 @@ export default function Navbar({
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-2"
+                  className="block text-xs sm:text-sm font-medium mb-2"
                   style={{ fontFamily: "'Press Start 2P', sans-serif" }}
                 >
                   AVATAR
@@ -508,11 +508,11 @@ export default function Navbar({
                   <img
                     src={user?.avatar || "/avatars/default.png"}
                     alt="Current Avatar"
-                    className="w-12 h-12 rounded-full border border-yellow-500"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-yellow-500"
                   />
                   <button
                     onClick={() => setIsAvatarModalOpen(true)}
-                    className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm transition anime-button flex-1 text-center"
+                    className="bg-gray-700 hover:bg-gray-600 text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm transition anime-button flex-1 text-center"
                     style={{ fontFamily: "'Press Start 2P', sans-serif" }}
                   >
                     CHANGE
@@ -523,7 +523,7 @@ export default function Navbar({
               <div className="pt-4 border-t border-gray-700">
                 <button
                   onClick={handleLogout}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded text-sm transition anime-button flex items-center justify-center space-x-2"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded text-xs sm:text-sm transition anime-button flex items-center justify-center space-x-2"
                   style={{ fontFamily: "'Press Start 2P', sans-serif" }}
                 >
                   <svg

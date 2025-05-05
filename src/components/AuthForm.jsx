@@ -86,8 +86,7 @@ export default function AuthForm({ onSuccess }) {
   const handleAuthSuccess = (user, isNewUser = false) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('needsUserSetup', 'true');
-      const destination = isNewUser ? "/dashboard?firstTime=true" : "/dashboard";
-      window.location.href = destination;
+      window.location.href = "/dashboard"; // Removed firstTime query param
     }
   };
 

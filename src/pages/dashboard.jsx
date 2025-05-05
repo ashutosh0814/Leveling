@@ -34,6 +34,7 @@ export default function Dashboard() {
     nextRankElixirs: 10000,
     completedChallenges: [],
     taskHistory: [],
+    onboardingCompleted: false,
   });
 
   const [currentWallpaper, setCurrentWallpaper] = useState("E Rank Wallpaper");
@@ -57,18 +58,20 @@ export default function Dashboard() {
             ...userData.user,
             completedChallenges: userData.user.completedChallenges || [],
             taskHistory: userData.user.taskHistory || [],
+            onboardingCompleted: userData.user.onboardingCompleted || false,
           });
+
           setDailyQuests(userData.dailyQuests || []);
           setWeeklyDungeons(userData.weeklyDungeons || []);
           setMonthlyGoals(userData.monthlyGoals || []);
           setCurrentWallpaper(userData.currentWallpaper || "E Rank Wallpaper");
 
-          const isFirstTime = router.query.firstTime === "true";
-          const hasCompletedOnboarding = localStorage.getItem(
-            "hasCompletedOnboarding"
-          );
+          // Check if onboarding should be shown
+          const shouldShowOnboarding =
+            !userData.user.onboardingCompleted &&
+            !localStorage.getItem("hasCompletedOnboarding");
 
-          if (isFirstTime && !hasCompletedOnboarding) {
+          if (shouldShowOnboarding) {
             setShowOnboarding(true);
           }
         } catch (error) {
@@ -82,11 +85,27 @@ export default function Dashboard() {
     });
 
     return () => unsubscribe();
-  }, [router.query]);
+  }, []);
 
-  const completeOnboarding = () => {
-    localStorage.setItem("hasCompletedOnboarding", "true");
-    setShowOnboarding(false);
+  const completeOnboarding = async () => {
+    try {
+      if (auth.currentUser) {
+        await updateUserData(auth.currentUser, {
+          user: {
+            ...user,
+            onboardingCompleted: true,
+          },
+        });
+        setUser((prev) => ({
+          ...prev,
+          onboardingCompleted: true,
+        }));
+      }
+      localStorage.setItem("hasCompletedOnboarding", "true");
+      setShowOnboarding(false);
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+    }
   };
 
   const handleAddTask = (category) => {
